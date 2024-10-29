@@ -1,5 +1,15 @@
 {
   "dependencies": {
     "voronoi": "^1.0.0"
-  }
+  },
+  "name": "voronoi-algorithms",
+  "version": "1.0.0",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }

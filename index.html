@@ -24,7 +24,7 @@
         <form id="pointsForm">
             <div class="form-group">
                 <label for="numPoints">Number of Points:</label>
-                <input type="number" id="numPoints" class="form-control" required>
+                <input type="number" id="numPoints" class="form-control" required min="1">
             </div>
             <div id="pointsInput" class="form-group"></div>
             <button type="button" id="generateButton" class="btn btn-primary">Generate Voronoi Diagram</button>
@@ -85,17 +85,26 @@
                 }
             });
 
+            // Draw the input points
+            context.fillStyle = 'red';
+            points.forEach(point => {
+                context.beginPath();
+                context.arc(point.x, point.y, 5, 0, Math.PI * 2, true);
+                context.fill();
+            });
+
             // Display results
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = `<h2>Voronoi Regions</h2>`;
             diagram.cells.forEach((cell, index) => {
                 const site = cell.site;
-                resultsDiv.innerHTML += `<h3>Region #${index + 1}: Site (${site.x}, ${site.y})</h3>`;
-                cell.halfedges.forEach(edgeIndex => {
+                resultsDiv.innerHTML += `<h3>Region #${index + 1}: Site (${site.x.toFixed(2)}, ${site.y.toFixed(2)})</h3>`;
+                const vertices = cell.halfedges.map(edgeIndex => {
                     const edge = diagram.edges[edgeIndex];
                     const vertex = edge.va;
-                    resultsDiv.innerHTML += `<p>Vertex (${vertex.x}, ${vertex.y})</p>`;
+                    return `(${vertex.x.toFixed(2)}, ${vertex.y.toFixed(2)})`;
                 });
+                resultsDiv.innerHTML += `<p>Vertices: ${vertices.join(', ')}</p>`;
             });
         });
     </script>
