@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voronoi Diagram Generator</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        canvas {
+            border: 1px solid black;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Voronoi Diagram Generator</h1>
+        <form id="pointsForm">
+            <div class="form-group">
+                <label for="numPoints">Number of Points:</label>
+                <input type="number" id="numPoints" class="form-control" required>
+            </div>
+            <div id="pointsInput" class="form-group"></div>
+            <button type="button" id="generateButton" class="btn btn-primary">Generate Voronoi Diagram</button>
+        </form>
+        <canvas id="voronoiCanvas" width="600" height="400"></canvas>
+        <div id="results"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/voronoi"></script>
+    <script>
+        document.getElementById('numPoints').addEventListener('input', function() {
+            const numPoints = parseInt(this.value) || 0;
+            const pointsInput = document.getElementById('pointsInput');
+            pointsInput.innerHTML = '';
+
+            for (let i = 0; i < numPoints; i++) {
+                pointsInput.innerHTML += `
+                    <div>
+                        <label>Point ${i + 1} (x, y):</label>
+                        <input type="number" step="any" class="form-control" placeholder="x" required>
+                        <input type="number" step="any" class="form-control" placeholder="y" required>
+                    </div>
+                `;
+            }
+        });
+
+        document.getElementById('generateButton').addEventListener('click', function() {
+            const points = [];
+            const inputs = document.querySelectorAll('#pointsInput div');
+            inputs.forEach(inputDiv => {
+                const x = parseFloat(inputDiv.querySelector('input[placeholder="x"]').value);
+                const y = parseFloat(inputDiv.querySelector('input[placeholder="y"]').value);
+                points.push({ x, y });
+            });
+
+            // Generate Voronoi Diagram using the voronoi library
+            const voronoi = new Voronoi();
+            const bbox = { xl: 0, xr: 600, yt: 400, yb: 0 }; // Canvas size
+            const diagram = voronoi.compute(points, bbox);
+
+            // Clear previous results and draw the new diagram
+            const canvas = document.getElementById('voronoiCanvas');
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the edges of the Voronoi diagram
+            context.strokeStyle = '#000';
+            diagram.edges.forEach(edge => {
+                const start = edge.va;
+                const end = edge.vb;
+
+                // Ensure the vertices are within the bounding box
+                if (start && end) {
+                    context.beginPath();
+                    context.moveTo(start.x, start.y);
+                    context.lineTo(end.x, end.y);
+                    context.stroke();
+                }
+            });
+
+            // Display results
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<h2>Voronoi Regions</h2>`;
+            diagram.cells.forEach((cell, index) => {
+                const site = cell.site;
+                resultsDiv.innerHTML += `<h3>Region #${index + 1}: Site (${site.x}, ${site.y})</h3>`;
+                cell.halfedges.forEach(edgeIndex => {
+                    const edge = diagram.edges[edgeIndex];
+                    const vertex = edge.va;
+                    resultsDiv.innerHTML += `<p>Vertex (${vertex.x}, ${vertex.y})</p>`;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
