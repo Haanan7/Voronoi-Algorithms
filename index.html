@@ -8,6 +8,9 @@
     <style>
         body {
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center elements horizontally */
         }
         #results {
             margin-top: 20px;
@@ -15,6 +18,14 @@
         canvas {
             border: 1px solid black;
             margin-top: 20px;
+            width: 100%; /* Make canvas responsive */
+            height: auto; /* Maintain aspect ratio */
+        }
+        footer {
+            margin-top: 20px;
+            text-align: center; /* Center text in footer */
+            font-size: 14px;
+            color: #666;
         }
     </style>
 </head>
@@ -28,17 +39,28 @@
             </div>
             <div id="pointsInput" class="form-group"></div>
             <button type="button" id="generateButton" class="btn btn-primary">Generate Voronoi Diagram</button>
+            <button type="button" id="randomButton" class="btn btn-secondary">Generate Random Points</button>
         </form>
-        <canvas id="voronoiCanvas" width="600" height="400"></canvas>
+        <canvas id="voronoiCanvas" width="800" height="600"></canvas>
         <div id="results"></div>
     </div>
 
+    <footer>
+        <p> <span id="currentYear"></span> This project has been done for course 321T supervised by Dr. Ahmad Z. Ibrahim &copy; All rights reserved Group 4.</p>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/voronoi"></script>
     <script>
+        const canvas = document.getElementById('voronoiCanvas');
+        const context = canvas.getContext('2d');
+
+        // Set the current year in the footer
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
         document.getElementById('numPoints').addEventListener('input', function() {
             const numPoints = parseInt(this.value) || 0;
             const pointsInput = document.getElementById('pointsInput');
-            pointsInput.innerHTML = '';
+            pointsInput.innerHTML = ''; // Clear existing inputs
 
             for (let i = 0; i < numPoints; i++) {
                 pointsInput.innerHTML += `
@@ -54,29 +76,48 @@
         document.getElementById('generateButton').addEventListener('click', function() {
             const points = [];
             const inputs = document.querySelectorAll('#pointsInput div');
+
+            // Collect points from input fields
             inputs.forEach(inputDiv => {
                 const x = parseFloat(inputDiv.querySelector('input[placeholder="x"]').value);
                 const y = parseFloat(inputDiv.querySelector('input[placeholder="y"]').value);
                 points.push({ x, y });
             });
 
-            // Generate Voronoi Diagram using the voronoi library
+            drawVoronoiDiagram(points);
+        });
+
+        document.getElementById('randomButton').addEventListener('click', function() {
+            const numPoints = parseInt(document.getElementById('numPoints').value) || 0;
+            const points = [];
+
+            for (let i = 0; i < numPoints; i++) {
+                points.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height
+                });
+            }
+
+            drawVoronoiDiagram(points);
+        });
+
+        function drawVoronoiDiagram(points) {
             const voronoi = new Voronoi();
-            const bbox = { xl: 0, xr: 600, yt: 400, yb: 0 }; // Canvas size
+            const bbox = { xl: 0, xr: canvas.width, yt: 0, yb: canvas.height };
             const diagram = voronoi.compute(points, bbox);
 
-            // Clear previous results and draw the new diagram
-            const canvas = document.getElementById('voronoiCanvas');
-            const context = canvas.getContext('2d');
+            // Clear the canvas
             context.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw the edges of the Voronoi diagram
+            // Draw the Voronoi diagram
             context.strokeStyle = '#000';
+            context.fillStyle = 'red'; // Set fill color for points
+
+            // Draw all edges
             diagram.edges.forEach(edge => {
                 const start = edge.va;
                 const end = edge.vb;
 
-                // Ensure the vertices are within the bounding box
                 if (start && end) {
                     context.beginPath();
                     context.moveTo(start.x, start.y);
@@ -86,27 +127,44 @@
             });
 
             // Draw the input points
-            context.fillStyle = 'red';
             points.forEach(point => {
                 context.beginPath();
                 context.arc(point.x, point.y, 5, 0, Math.PI * 2, true);
                 context.fill();
             });
 
-            // Display results
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = `<h2>Voronoi Regions</h2>`;
-            diagram.cells.forEach((cell, index) => {
+            // Display result for the first Voronoi region if there are any cells
+            if (diagram.cells.length > 0) {
+                const cell = diagram.cells[0]; // Only show the first cell (region)
                 const site = cell.site;
-                resultsDiv.innerHTML += `<h3>Region #${index + 1}: Site (${site.x.toFixed(2)}, ${site.y.toFixed(2)})</h3>`;
                 const vertices = cell.halfedges.map(edgeIndex => {
                     const edge = diagram.edges[edgeIndex];
-                    const vertex = edge.va;
-                    return `(${vertex.x.toFixed(2)}, ${vertex.y.toFixed(2)})`;
+                    return edge.va;
                 });
-                resultsDiv.innerHTML += `<p>Vertices: ${vertices.join(', ')}</p>`;
-            });
-        });
+
+                // Highlight the region
+                context.fillStyle = 'rgba(255, 0, 0, 0.3)'; // Light red fill for the region
+                context.beginPath();
+                vertices.forEach((vertex, index) => {
+                    if (index === 0) {
+                        context.moveTo(vertex.x, vertex.y);
+                    } else {
+                        context.lineTo(vertex.x, vertex.y);
+                    }
+                });
+                context.closePath();
+                context.fill();
+
+                // Display the result
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = `<h2>Voronoi Region</h2>`;
+                resultsDiv.innerHTML += `<h3>Region for Site (${site.x.toFixed(2)}, ${site.y.toFixed(2)})</h3>`;
+                const regionVertices = vertices.map(vertex => `(${vertex.x.toFixed(2)}, ${vertex.y.toFixed(2)})`);
+                resultsDiv.innerHTML += `<p>Vertices: ${regionVertices.join(', ')}</p>`;
+            } else {
+                document.getElementById('results').innerHTML = '<h2>No regions to display</h2>';
+            }
+        }
     </script>
 </body>
 </html>
